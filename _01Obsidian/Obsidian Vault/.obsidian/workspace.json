@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01DayMemo/2026-02-12.md",
+                "file": "01DayMemo/2026-02-22.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-02-12"
+              "title": "2026-02-22"
             }
           }
         ]
@@ -182,8 +182,9 @@
   },
   "active": "eda2d5108a92a663",
   "lastOpenFiles": [
-    "01DayMemo/2026-02-08.md",
     "01DayMemo/2026-02-12.md",
+    "01DayMemo/2026-02-22.md",
+    "01DayMemo/2026-02-08.md",
     "01DayMemo/2026-01-24.md",
     "01DayMemo/2026-01-22.md",
     "01DayMemo/_Format.md",

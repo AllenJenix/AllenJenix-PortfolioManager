@@ -1,32 +1,39 @@
-```angular2html
+```text
 Allenz_Portfolio_Manager/
 │
-├── 01DATA/                  # (데이터 저장소 - Data Repository)
-│   ├── raw/                 # HTS에서 다운받은 원본 파일 (1750.csv 등)
-│   └── processed/           # 시스템이 생성한 정제 파일 (00~06.csv)
+├── 01DATA/                  # 💾 [데이터 저장소 - Data Repository]
+│   ├── raw/                 # [Input] HTS에서 다운받은 원본 CSV (1750, 1721, 17100001)
+│   └── processed/           # [Output] 파이프라인이 정제/생성한 시스템 데이터
+│       ├── 00Transaction_History.csv  (정제된 거래내역)
+│       ├── 01Asset_Summary.csv        (정제된 자산현황)
+│       ├── 02Portfolio_Holdings.csv   (현재 보유종목)
+│       ├── 03Full_Portfolio.csv       (현금 포함 통합 포트폴리오)
+│       ├── 04Daily_Asset_Ledger.csv   (일별 자산 원장 - 핵심 타임라인 DB)
+│       ├── 05Performance_Data.csv     (성과 분석 지표 - TWR, MWR, MDD)
+│       ├── 06Benchmark_Data.csv       (시장 벤치마크 지수 - SPY, QQQ 등)
+│       └── 07Historical_Holdings.csv  (역산된 과거 포트폴리오 스냅샷 & 현금)
 │
-├── 02src/                   # (소스 코드 - Source Code)
-│   ├── config.py            # [Global Config] 경로 및 공통 설정 관리 (Root of Source)
-│   ├── __init__.py
+├── 02src/                   # 🧠 [소스 코드 - Source Code]
+│   ├── config.py            # [전역 설정] 절대 경로, 파일명 매핑, 공통 상수 관리
+│   ├── isin_mapping.json    # [설정] ISIN 국제표준코드 ↔ 실제 Ticker 수동 매핑 사전
 │   │
-│   ├── 01data_loaders/      # [Layer 1] 데이터 입출력 & 파싱 (Data Access Layer)
-│   │   ├── __init__.py
-│   │   ├── io.py            # CSV 읽기/쓰기 공통 유틸리티
-│   │   └── parser.py        # HTS 원본 데이터 파싱 및 표준화 로직
+│   ├── data_loaders/        # 🧱 [Layer 1] Data Access Layer (데이터 수집 및 전처리)
+│   │   ├── io.py            # 인코딩('cp949'/'utf-8') 자동 감지 및 안전한 파일 입출력
+│   │   └── parser.py        # HTS 비정형 원본 데이터를 시스템 표준 포맷으로 파싱
 │   │
-│   ├── 02engines/           # [Layer 2] 금융 계산 핵심 로직 (Business Logic Layer)
-│   │   ├── __init__.py
-│   │   ├── ledger.py        # 일별 자산 원장 생성 & 보간법 적용 (-> 04파일)
-│   │   ├── metrics.py       # 성과 지표(TWR, MWR, MDD) 계산 (-> 05파일)
-│   │   ├── timemachine.py   # 보유 수량 역산 & 최저점 보정 (-> 06파일)
-│   │   └── benchmark.py     # yfinance 연동 & 시장 지수 비교 분석
+│   ├── engines/             # ⚙️ [Layer 2] Business Logic Layer (분석 핵심 엔진)
+│   │   ├── ledger.py        # 하이브리드 보간법 적용 일별 자산 원장(04) 생성
+│   │   ├── metrics.py       # TWR, MWR(XIRR), MDD 등 핵심 성과 지표(05) 산출
+│   │   ├── benchmark.py     # yfinance 연동 시장 지수 데이터(06) 수집
+│   │   └── history.py       # 과거 포트폴리오 역산 엔진 (Historical Holdings)
 │   │
-│   └── 03ui/                # [Layer 3] 시각화 및 리포팅 (Presentation Layer)
-│       ├── __init__.py
-│       ├── dashboard.py     # 포트폴리오 타임머신 대시보드 (Interactive)
-│       ├── plotter.py       # 정적 차트 및 벤치마크 그래프
-│       └── letter_gen.py    # (Planned) AI 주주서한 프롬프트 생성기
+│   └── ui/                  # 🖥️ [Layer 3] Presentation Layer (웹 대시보드)
+│       ├── app.py           # [메인 라우터] Streamlit 사이드바 및 페이지 전환 통제
+│       └── components/      # [UI 컴포넌트]
+│           ├── portfolio.py   # [탭 1] 현재 포트폴리오 자산 배분 및 명세서
+│           ├── analytics.py   # [탭 2] 동적 리베이싱 기반 성과 분석 & 벤치마크 차트
+│           └── history_tab.py # [탭 3] 특정 과거 시점의 자산/현금 비중 시각화 위젯
 │
-├── requirements.txt         # 프로젝트 의존성 라이브러리 목록
-└── main.py                  # 프로그램 실행 진입점 (Entry Point)
+├── CODING_CONVENTION.md     # 📜 코딩 표준 정의서
+└── FILE_TREE.md             # 📜 프로젝트 디렉터리 구조
 ```

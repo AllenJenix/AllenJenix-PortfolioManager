@@ -7,11 +7,15 @@
 
 # 1. Imports
 import os
+import json
 from pathlib import Path
 
 # 2. Path Configuration (경로 설정)
-# 프로젝트 루트: 02src(현재 폴더)의 부모 폴더
-BASE_DIR = Path(__file__).resolve().parent.parent
+# SRC_DIR: config.py가 위치한 현재 폴더 (02src)
+SRC_DIR = Path(__file__).resolve().parent
+
+# BASE_DIR: 프로젝트 최상위 루트 폴더 (Allenz_Portfolio_Manager)
+BASE_DIR = SRC_DIR.parent
 
 # 데이터 저장소 경로
 DATA_DIR = BASE_DIR / "01DATA"
@@ -44,7 +48,8 @@ PROCESSED_FILES = {
     'full_portfolio': '03Full_Portfolio.csv',        # cash 포함 보유 현황
     'ledger': '04Daily_Asset_Ledger.csv',            # 일별 자산 원장 (시계열)
     'performance': '05Performance_Data.csv',         # 성과 지표 (TWR/MWR/MDD)
-    'timeline': '06Daily_Holdings_Timeline.csv'     # 종목별 보유수량 타임라인
+    'benchmark': '06Benchmark_Data.csv',             # 시장 지수 데이터
+    'timeline': '07Historical_Holdings.csv'          # 종목별 보유수량 타임라인 (타임머신용)
 }
 
 # 5. Global Constants (공통 상수)
@@ -52,11 +57,14 @@ PROCESSED_FILES = {
 ENCODING_KR = 'cp949'      # HTS 다운로드 원본 (한글 윈도우 표준)
 ENCODING_STD = 'utf-8-sig' # 내부 처리용 표준 (Excel 호환)
 
-# 날짜 포맷
-DATE_FMT = '%Y-%m-%d'
+# --- [Tickers Mapping (Temporary JSON)] ---
+# 향후 자동화 전까지 수동 매핑(ISIN -> Ticker)을 분리하여 관리합니다.
+ISIN_MAPPING_FILE = SRC_DIR / "isin_mapping.json"
+ISIN_TO_TICKER = {}
 
-# 6. Execution Block (For Verification)
-if __name__ == "__main__":
-    print(f"✅ Configuration Loaded")
-    print(f"ℹ️ Base Dir: {BASE_DIR}")
-    print(f"ℹ️ Raw Files Map: {RAW_FILES}")
+if ISIN_MAPPING_FILE.exists():
+    try:
+        with open(ISIN_MAPPING_FILE, 'r', encoding='utf-8') as f:
+            ISIN_TO_TICKER = json.load(f)
+    except Exception as e:
+        print(f"⚠️ [Config] isin_mapping.json 로드 실패: {e}")
