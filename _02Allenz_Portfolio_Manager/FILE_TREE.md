@@ -1,39 +1,47 @@
 ```text
 Allenz_Portfolio_Manager/
 │
-├── 01DATA/                  # 💾 [데이터 저장소 - Data Repository]
-│   ├── raw/                 # [Input] HTS에서 다운받은 원본 CSV (1750, 1721, 17100001)
-│   └── processed/           # [Output] 파이프라인이 정제/생성한 시스템 데이터
-│       ├── 00Transaction_History.csv  (정제된 거래내역)
-│       ├── 01Asset_Summary.csv        (정제된 자산현황)
-│       ├── 02Portfolio_Holdings.csv   (현재 보유종목)
-│       ├── 03Full_Portfolio.csv       (현금 포함 통합 포트폴리오)
-│       ├── 04Daily_Asset_Ledger.csv   (일별 자산 원장 - 핵심 타임라인 DB)
-│       ├── 05Performance_Data.csv     (성과 분석 지표 - TWR, MWR, MDD)
-│       ├── 06Benchmark_Data.csv       (시장 벤치마크 지수 - SPY, QQQ 등)
-│       └── 07Historical_Holdings.csv  (역산된 과거 포트폴리오 스냅샷 & 현금)
+├── .env                     # 🔒 API 키 등 환경 변수 저장 (git 제외)
+├── .gitignore               # git 추적 제외 목록 (.env, logs 등)
 │
-├── 02src/                   # 🧠 [소스 코드 - Source Code]
+├── 01DATA/                  # 💾 [데이터 계층]
+│   ├── raw/                 # [Input] HTS에서 다운받은 원본 CSV (자동화 시작점)
+│   ├── processed/           # [Output] 파이프라인이 정제/생성한 시스템 데이터 (00~07)
+│   └── reference/           # 📚 [AI Source] 주주서한/팩트시트 원본 PDF
+│
+├── 02src/                   # 🧠 [소스 코드]
 │   ├── config.py            # [전역 설정] 절대 경로, 파일명 매핑, 공통 상수 관리
 │   ├── isin_mapping.json    # [설정] ISIN 국제표준코드 ↔ 실제 Ticker 수동 매핑 사전
 │   │
-│   ├── data_loaders/        # 🧱 [Layer 1] Data Access Layer (데이터 수집 및 전처리)
-│   │   ├── io.py            # 인코딩('cp949'/'utf-8') 자동 감지 및 안전한 파일 입출력
-│   │   └── parser.py        # HTS 비정형 원본 데이터를 시스템 표준 포맷으로 파싱
+│   ├── data_loaders/        # 🧱 [Layer 1] 데이터 수집 및 전처리
+│   │   ├── io.py            
+│   │   └── parser.py        
 │   │
-│   ├── engines/             # ⚙️ [Layer 2] Business Logic Layer (분석 핵심 엔진)
-│   │   ├── ledger.py        # 하이브리드 보간법 적용 일별 자산 원장(04) 생성
-│   │   ├── metrics.py       # TWR, MWR(XIRR), MDD 등 핵심 성과 지표(05) 산출
-│   │   ├── benchmark.py     # yfinance 연동 시장 지수 데이터(06) 수집
-│   │   └── history.py       # 과거 포트폴리오 역산 엔진 (Historical Holdings)
+│   ├── engines/             # ⚙️ [Layer 2] 퀀트 분석 핵심 엔진
+│   │   ├── ledger.py        
+│   │   ├── metrics.py       
+│   │   ├── benchmark.py     
+│   │   └── history.py       
 │   │
-│   └── ui/                  # 🖥️ [Layer 3] Presentation Layer (웹 대시보드)
-│       ├── app.py           # [메인 라우터] Streamlit 사이드바 및 페이지 전환 통제
-│       └── components/      # [UI 컴포넌트]
-│           ├── portfolio.py   # [탭 1] 현재 포트폴리오 자산 배분 및 명세서
-│           ├── analytics.py   # [탭 2] 동적 리베이싱 기반 성과 분석 & 벤치마크 차트
-│           └── history_tab.py # [탭 3] 특정 과거 시점의 자산/현금 비중 시각화 위젯
+│   ├── ui/                  # 🖥️ [Layer 3] Streamlit 웹 대시보드
+│   │   ├── app.py           
+│   │   └── components/      
+│   │       ├── portfolio.py 
+│   │       ├── analytics.py 
+│   │       └── history_tab.py 
+│   │
+│   └── ai/                  # 🤖 [Layer 4] 멀티모달 AI 리포트 생성 (Gemini 2.5 Pro)
+│       ├── mcp_server.py    
+│       ├── agent.py         
+│       └── prompts.py       
+│
+├── 03Output/                # ✉️ [출력 계층] AI가 생성한 최종 결과물
+│   └── 2025_01_Integrated_Report.md
+│
+├── logs/                    # 📝 실행 로그 폴더
 │
 ├── CODING_CONVENTION.md     # 📜 코딩 표준 정의서
-└── FILE_TREE.md             # 📜 프로젝트 디렉터리 구조
+├── FILE_TREE.md             # 📜 프로젝트 디렉터리 구조
+│
+└── update.py                # 🔄 [메인 스위치] 전체 데이터 갱신 및 파이프라인 트리거
 ```

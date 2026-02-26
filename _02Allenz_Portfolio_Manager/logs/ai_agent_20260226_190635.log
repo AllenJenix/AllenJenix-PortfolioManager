@@ -1,0 +1,15 @@
+2026-02-26 19:06:35,138 [INFO] 🚀 [AI Agent] 파이프라인 가동 (Native PDF + MCP)
+2026-02-26 19:06:39,141 [INFO] ✅ MCP 서버 접속 성공!
+2026-02-26 19:06:39,141 [INFO] 📂 레퍼런스(PDF) 경로 수집 중...
+2026-02-26 19:06:39,147 [INFO] ⚙️ 포트폴리오 성과 데이터 추출 중...
+2026-02-26 19:06:39,511 [INFO] 📤 PDF 레퍼런스를 Gemini 서버로 전송 중...
+2026-02-26 19:06:40,628 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/upload/v1beta/files "HTTP/1.1 200 OK"
+2026-02-26 19:06:42,934 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=AGQBYWwEks4bu2xLgWDtV9bUA75KNvmcDfQvLwElamWBcileYfm6fqioXSg_aYyolyQ73rbr11kteaJkdwBdGO0IjK5dpt_1QwXo6aEbZtVpo7c&upload_protocol=resumable "HTTP/1.1 200 OK"
+2026-02-26 19:06:43,402 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/upload/v1beta/files "HTTP/1.1 200 OK"
+2026-02-26 19:06:45,425 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=AGQBYWz9ESupjdUEte8t5pXi4fUi9t5CqVDwTwCrcjtgjEQf6ZKPBiY8v0mocHV2TsVMf1rJzSegR29oMmMzr2kyYFNbY1pOQD-47UAKhzF0sTQ&upload_protocol=resumable "HTTP/1.1 200 OK"
+2026-02-26 19:06:45,426 [INFO] 🧠 Gemini-2.5-pro 모델이 PDF 레이아웃과 데이터를 분석하여 딥 밸류 서한을 집필 중입니다...
+2026-02-26 19:06:45,427 [INFO] AFC is enabled with max remote calls: 10.
+2026-02-26 19:07:53,880 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent "HTTP/1.1 200 OK"
+2026-02-26 19:07:53,885 [INFO] 🎉 리포트 생성 완료! 파일 위치: 03Output\2025_01_Integrated_Report.md
+2026-02-26 19:07:55,935 [INFO] HTTP Request: DELETE https://generativelanguage.googleapis.com/v1beta/files/ph1ducxp45mv "HTTP/1.1 200 OK"
+2026-02-26 19:07:58,084 [INFO] HTTP Request: DELETE https://generativelanguage.googleapis.com/v1beta/files/0xsu10qyme6a "HTTP/1.1 200 OK"

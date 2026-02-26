@@ -10,7 +10,7 @@ import plotly.express as px
 
 
 def render_page(df_history: pd.DataFrame):
-    st.header("🕰️ 역사적 포트폴리오 스냅샷 (Time Machine)")
+    st.header("🕰️ 포트폴리오 스냅샷 (Historical Holdings)")
     st.markdown("---")
 
     if df_history.empty:
@@ -21,7 +21,7 @@ def render_page(df_history: pd.DataFrame):
     min_date = df_history['Date'].min().date()
     max_date = df_history['Date'].max().date()
 
-    st.markdown("#### 📅 타임머신 날짜 선택")
+    st.markdown("#### 📅 스냅샷 날짜 선택")
     selected_date = st.slider(
         "조회하고 싶은 과거의 날짜를 선택하세요:",
         min_value=min_date,

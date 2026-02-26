@@ -1,0 +1,78 @@
+2026-02-26 11:53:09 [INFO] 🚀 [AI Agent] AI 주주 서한 생성 파이프라인 가동 시작...
+2026-02-26 11:53:09 [INFO] 📝 현재 로그 파일: ai_agent_20260226_115309.log
+2026-02-26 11:53:09 [INFO] 🔌 [AI Agent] MCP 서버와 연결을 시도합니다...
+2026-02-26 11:53:13 [INFO] ✅ [AI Agent] MCP 서버 접속 성공!
+2026-02-26 11:53:13 [INFO] 📂 [AI Agent] 서버에서 가치투자 철학(Resource)을 다운로드합니다...
+2026-02-26 11:53:13 [INFO] ⚙️ [AI Agent] 서버의 Tool을 호출하여 최신 성과를 분석합니다...
+2026-02-26 11:53:13 [INFO] ✅ [AI Agent] 서버 통신 완료 및 데이터 수집 성공. 서버를 종료합니다.
+2026-02-26 11:53:13 [INFO] 🧠 [AI Agent] Gemini AI 모델(gemini-1.5-flash)을 초기화합니다...
+2026-02-26 11:53:14 [INFO] ✍️ [AI Agent] Gemini가 수집된 데이터를 바탕으로 주주 서한을 집필 중입니다 (약 10~20초 소요)...
+2026-02-26 11:53:15 [ERROR] ❌ [AI Agent] 파이프라인 실행 중 치명적인 오류 발생!
+Traceback (most recent call last):
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 3088, in _agenerate
+    await self.client.aio.models.generate_content(
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\models.py", line 7487, in generate_content
+    response = await self._generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\models.py", line 6242, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\_api_client.py", line 1442, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\_api_client.py", line 1374, in _async_request
+    return await retry(self._async_request_once, http_request, stream)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\tenacity\asyncio\__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\tenacity\asyncio\__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\tenacity\_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\tenacity\__init__.py", line 393, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\tenacity\asyncio\__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\_api_client.py", line 1320, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\errors.py", line 216, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\google\genai\errors.py", line 238, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\Desktop\Value-Quant-reports\_02Allenz_Portfolio_Manager\02src\ai\agent.py", line 104, in generate_shareholder_letter
+    response = await chain.ainvoke({
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_core\runnables\base.py", line 3197, in ainvoke
+    input_ = await coro_with_context(part(), context, create_task=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 425, in ainvoke
+    llm_result = await self.agenerate_prompt(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1134, in agenerate_prompt
+    return await self.agenerate(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1092, in agenerate
+    raise exceptions[0]
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1361, in _agenerate_with_cache
+    result = await self._agenerate(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 3093, in _agenerate
+    _handle_client_error(e, request)
+  File "C:\Users\admin\Desktop\Value-Quant-reports\venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 145, in _handle_client_error
+    raise ChatGoogleGenerativeAIError(msg) from e
+langchain_google_genai.chat_models.ChatGoogleGenerativeAIError: Error calling model 'gemini-1.5-flash' (NOT_FOUND): 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
