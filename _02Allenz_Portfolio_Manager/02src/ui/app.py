@@ -61,7 +61,7 @@ def main():
         [
             "🏠 내 포트폴리오 (Current)",
             "📈 성과 분석 & 벤치마크 (Metrics)",
-            "🕰️ 역사적 스냅샷 (Time Machine)" # [NEW] 3번째 탭
+            "🕰️ 포트폴리오 스냅샷 (Historical Holdings)" # [NEW] 3번째 탭
         ]
     )
 
@@ -73,7 +73,7 @@ def main():
         portfolio.render_page(df_full)
     elif menu == "📈 성과 분석 & 벤치마크 (Metrics)":
         analytics.render_page(df_perf, df_bench)
-    elif menu == "🕰️ 역사적 스냅샷 (Time Machine)":
+    elif menu == "🕰️ 포트폴리오 스냅샷 (Historical Holdings)":
         history_tab.render_page(df_history)
 
 # 5. Execution Block

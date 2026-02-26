@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "4af19f1ae5bda568",
+        "id": "642cc5fbe8fd4b8e",
         "type": "tabs",
         "children": [
           {
-            "id": "eda2d5108a92a663",
+            "id": "7a2e9ede7a0a67ce",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -180,18 +180,20 @@
       "bases:새 베이스 생성하기": false
     }
   },
-  "active": "eda2d5108a92a663",
+  "active": "7a2e9ede7a0a67ce",
   "lastOpenFiles": [
-    "01DayMemo/2026-02-12.md",
+    "01DayMemo/2026-02-24.md",
     "01DayMemo/2026-02-22.md",
+    "01DayMemo/2026-02-12.md",
+    "01DayMemo/_Format.md",
+    "01DayMemo/2026-01-22.md",
     "01DayMemo/2026-02-08.md",
     "01DayMemo/2026-01-24.md",
-    "01DayMemo/2026-01-22.md",
-    "01DayMemo/_Format.md",
     "00Master/Investment Portfolio Manager.md",
+    "무제.base",
+    "무제.canvas",
     "01DayMemo",
     "00Master",
-    "무제.base",
     "환영합니다!.md"
   ]
 }
