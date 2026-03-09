@@ -189,5 +189,8 @@ def calculate_metrics() -> pd.DataFrame:
 
 
 # 5. Execution Block
-if __name__ == "__main__":
+def main():
     calculate_metrics()
+
+if __name__ == "__main__":
+    main()

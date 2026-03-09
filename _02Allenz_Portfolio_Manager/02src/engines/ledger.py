@@ -274,7 +274,10 @@ def generate_integrated_portfolio(ledger_df: pd.DataFrame) -> pd.DataFrame:
     return df_full
 
 # 5. Execution Block
-if __name__ == "__main__":
+def main():
     df_ledger = create_daily_ledger()
     if not df_ledger.empty:
         generate_integrated_portfolio(df_ledger)
+
+if __name__ == "__main__":
+    main()

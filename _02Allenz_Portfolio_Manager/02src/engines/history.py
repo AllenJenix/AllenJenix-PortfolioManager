@@ -169,5 +169,8 @@ def generate_timeline():
 
     print(f"✅ {MODULE_TAG} 타임머신 DB({save_path.name}) 최종 저장 완료")
 
-if __name__ == "__main__":
+def main():
     generate_timeline()
+
+if __name__ == "__main__":
+    main()

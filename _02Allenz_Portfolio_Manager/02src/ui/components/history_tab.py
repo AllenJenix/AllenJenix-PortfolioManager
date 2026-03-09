@@ -73,7 +73,7 @@ def render_page(df_history: pd.DataFrame):
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
         fig.update_layout(showlegend=False, margin=dict(t=0, b=0, l=0, r=0))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.subheader("💰 총 평가 자산")
@@ -84,7 +84,7 @@ def render_page(df_history: pd.DataFrame):
         # 비중 문자열 포맷팅
         summary_df = plot_df[['자산명', '비중']].copy()
         summary_df['비중'] = summary_df['비중'].apply(lambda x: f"{x:.2f}%")
-        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.dataframe(summary_df, width="stretch", hide_index=True)
 
     # 4. 상세 명세서 테이블
     st.markdown("---")
@@ -96,4 +96,4 @@ def render_page(df_history: pd.DataFrame):
         '평가금액': '₩ {:,.0f}',
         '비중': '{:.2f}%'
     })
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)

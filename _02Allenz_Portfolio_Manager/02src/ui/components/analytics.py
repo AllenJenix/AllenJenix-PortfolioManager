@@ -137,7 +137,7 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
         # 현금 흐름 막대 차트 (보조 축 사용 없이 크기 스케일만 맞춤)
         fig1.add_trace(go.Bar(x=p_df['Date'], y=p_df['External_Flow'], name='입출금(Flow)', marker_color='#f1c40f'))
         fig1.update_layout(height=400, hovermode='x unified', margin=dict(l=0, r=0, t=30, b=0))
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width="stretch")
 
     with tab2:
         st.subheader("내 포트폴리오 vs 시장 지수")
@@ -155,7 +155,7 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
                                   mode='lines', name='Russell 2000 (IWM)', line=dict(color='#9b59b6', width=1.5)))
 
         fig2.update_layout(height=450, hovermode='x unified', yaxis_title="수익률 (%)", margin=dict(l=0, r=0, t=30, b=0))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     with tab3:
         st.subheader("구간 내 최대 낙폭 분석")
@@ -163,4 +163,4 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
         fig3.add_trace(go.Scatter(x=p_df['Date'], y=p_df['Period_Drawdown']*100, fill='tozeroy',
                                   mode='lines', name='Drawdown', line=dict(color='#e74c3c')))
         fig3.update_layout(height=400, hovermode='x unified', yaxis_title="낙폭 (%)", margin=dict(l=0, r=0, t=30, b=0))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")

@@ -104,5 +104,8 @@ def generate_benchmark_data() -> pd.DataFrame:
     return df_bench
 
 # 5. Execution Block
-if __name__ == "__main__":
+def main():
     generate_benchmark_data()
+
+if __name__ == "__main__":
+    main()

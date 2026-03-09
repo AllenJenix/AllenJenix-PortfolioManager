@@ -55,13 +55,13 @@ def render_page(df_full: pd.DataFrame):
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
         fig.update_layout(showlegend=False, margin=dict(t=0, b=0, l=0, r=0))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.subheader("📊 비중 요약 Top 5")
         summary_df = df_full.sort_values(by='보유비중', ascending=False).head(5)[['종목명', '보유비중']]
         summary_df['보유비중'] = summary_df['보유비중'].apply(lambda x: f"{x:.2f}%")
-        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.dataframe(summary_df, width="stretch", hide_index=True)
 
     st.markdown("---")
 
@@ -80,4 +80,4 @@ def render_page(df_full: pd.DataFrame):
         '보유비중': '{:.2f}%'
     }).map(_color_returns, subset=['수익률'])
 
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)

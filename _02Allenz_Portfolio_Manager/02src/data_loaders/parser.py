@@ -291,7 +291,7 @@ def parse_holdings_17100001() -> pd.DataFrame:
     return df
 
 # 5. Execution Block
-if __name__ == "__main__":
+def main():
     print(f"🚀 {MODULE_TAG} Parsing Sequence Start...")
 
     df_tx = parse_transaction_1750()
@@ -304,3 +304,6 @@ if __name__ == "__main__":
     print(f"ℹ️ 보유종목: {len(df_holdings)} rows")
 
     print(f"✅ All Parsing Completed.")
+
+if __name__ == "__main__":
+    main()
