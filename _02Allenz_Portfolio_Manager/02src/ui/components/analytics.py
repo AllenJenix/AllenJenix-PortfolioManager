@@ -112,13 +112,13 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
 
     # Streamlit은 delta 값이 양수면 초록색, 음수면 빨간색을 자동 지원합니다. (미국식)
     with kpi1:
-        st.metric("📈 시간 가중 수익률 (TWR)", f"{period_twr:.2f}%", delta=f"{period_twr:.2f}%")
+        st.metric("📈 TWR", f"{period_twr:.2f}%", delta=f"{period_twr:.2f}%")
     with kpi2:
-        st.metric("💰 금액 가중 수익률 (MWR)", f"{period_mwr:.2f}%", delta=f"{period_mwr:.2f}%")
+        st.metric("💰 MWR (IRR)", f"{period_mwr:.2f}%", delta=f"{period_mwr:.2f}%")
     with kpi3:
-        st.metric("📉 최대 낙폭 (MDD)", f"{period_mdd:.2f}%", delta=f"{period_mdd:.2f}%", delta_color="inverse")
+        st.metric("📉 MDD", f"{period_mdd:.2f}%", delta=f"{period_mdd:.2f}%", delta_color="inverse")
     with kpi4:
-        st.metric("🥊 초과 수익 (vs S&P500)", f"{alpha:.2f}%p", delta=f"{alpha:.2f}%p")
+        st.metric("🥊 Alpha (vs S&P500)", f"{alpha:.2f}%p", delta=f"{alpha:.2f}%p")
 
     st.markdown("---")
 

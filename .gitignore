@@ -1,6 +1,9 @@
 *.idea
-*__pycache__/
+**/__pycache__/
 # eNVIROMENTS
 .env
 *build
 *dist
+*.py[cod]
+CLAUDE.md
+PROJECT_BRIEFING.md
