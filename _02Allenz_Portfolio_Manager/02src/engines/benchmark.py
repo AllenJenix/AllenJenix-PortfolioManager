@@ -2,6 +2,7 @@
 @Title: Benchmark Data Engine
 @Description: 내 포트폴리오 성과 기간과 동일한 기간의 시장 지수(SPY, QQQ, IWM) 데이터를 수집하고 누적 수익률을 계산합니다.
 @Author: Allen & Gemini
+@Date: 2026-03-26
 """
 
 # 1. Imports

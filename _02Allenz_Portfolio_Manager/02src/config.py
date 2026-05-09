@@ -48,7 +48,8 @@ for d in [DATA_DIR, RAW_DIR, PROCESSED_DIR, REFERENCE_DIR, CACHE_DIR]:
 RAW_FILES = {
     'transaction': '1750.csv',       # 거래 내역 (HTS 1750 화면)
     'asset_summary': '1721.csv',     # 자산 현황 (HTS 1721 화면)
-    'holdings': '17100001.csv'       # 보유 종목 (HTS 17100001 화면)
+    'holdings': '17100001.csv',      # 보유 종목 (HTS 17100001 화면)
+    'trade_history': '2610.csv'      # 해외주식매매내역 - 매매일/결제일 포함 (HTS 2610 화면)
 }
 
 # 시스템이 생성/사용할 표준화된 파일명
@@ -60,7 +61,8 @@ PROCESSED_FILES = {
     'ledger': '04Daily_Asset_Ledger.csv',
     'performance': '05Performance_Data.csv',
     'benchmark': '06Benchmark_Data.csv',
-    'timeline': '07Historical_Holdings.csv'
+    'timeline': '07Historical_Holdings.csv',
+    'trade_history': '08Equity_Trade_History.csv'  # 정제된 해외주식 매매일 기준 거래내역
 }
 
 # 6. Global Constants (공통 상수)
@@ -75,8 +77,13 @@ ENCODING_STD = 'utf-8-sig' # 내부 처리용 표준 (Excel 호환)
 #     https://fredaccount.stlouisfed.org/apikeys
 RISK_FREE_RATE_FALLBACK = 0.045  # 4.5% — 모든 외부 조회 실패 시 최후 수단 상수
 
-# --- [Tickers Mapping (Temporary JSON)] ---
-ISIN_MAPPING_FILE = SRC_DIR / "isin_mapping.json"
+# --- [Tickers Mapping (JSON)] ---
+# ROOT 디렉토리의 isin_mapping.json을 Single Source of Truth로 사용합니다.
+if IS_FROZEN:
+    ISIN_MAPPING_FILE = BUNDLE_DIR / "isin_mapping.json"
+else:
+    ISIN_MAPPING_FILE = BASE_DIR / "isin_mapping.json"
+
 ISIN_TO_TICKER = {}
 
 if ISIN_MAPPING_FILE.exists():

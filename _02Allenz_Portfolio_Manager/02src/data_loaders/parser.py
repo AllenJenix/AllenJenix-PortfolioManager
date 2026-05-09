@@ -290,6 +290,135 @@ def parse_holdings_17100001() -> pd.DataFrame:
     local_io.save_csv(df, output_path)
     return df
 
+def parse_trade_history_2610() -> pd.DataFrame:
+    """2610.csv (해외주식매매내역) 파싱.
+
+    파일 구조: 2행 1레코드 형식 + 페이지 구분선(SHINHAN SECURITIES.) 반복.
+      Row 1 (홀수행): idx[2]=매매일자, [3]=수량, [4]=결제예정일, [5]=통화,
+                       [6]=국가코드, [7]=약정금액, [8]=종목명(한글(영문)), [9]=ISIN, [10]=주문번호
+      Row 2 (짝수행): idx[2]=결제일자(확인용), [3]=단가, [4]=결제금액, [5]=환율(KRW/외화),
+                       [6]=구분(매수/매도), [7]=수수료, [8]=티커심볼, [9]=거래구분, [10]=분류번호
+
+    Row1 식별 기준: idx[9]가 ISIN 패턴([A-Z]{2}[A-Z0-9]{9}[0-9])과 일치.
+    매도 식별 기준: idx[6]의 구분 텍스트에 "매도" 포함 → quantity 음수 처리.
+    Brazil 채권(BRSTNCNTF1P8/BRL)은 파싱 단계에서 제외 (현금 취급).
+    """
+    input_path = config.RAW_DIR / config.RAW_FILES['trade_history']
+    print(f"🚀 {MODULE_TAG} 해외매매내역(2610) 파싱 시작: {input_path.name}")
+
+    if not input_path.exists():
+        print(f"❌ {MODULE_TAG} 파일 없음: {input_path}")
+        return pd.DataFrame()
+
+    lines = []
+    for enc in [config.ENCODING_KR, 'utf-8', 'euc-kr']:
+        try:
+            with open(input_path, 'r', encoding=enc) as f:
+                lines = list(csv.reader(f))
+            break
+        except UnicodeDecodeError:
+            continue
+
+    if not lines:
+        print(f"❌ {MODULE_TAG} 인코딩 실패 또는 빈 파일")
+        return pd.DataFrame()
+
+    _ISIN_RE = re.compile(r'^[A-Z]{2}[A-Z0-9]{9}[0-9]$')
+    _SKIP_ISINS = {'BRSTNCNTF1P8'}  # BRL 채권: 현금 취급, 제외
+
+    def _is_row1(row: list) -> bool:
+        """Row 1 판별: idx[2]=날짜 AND idx[9]=ISIN 패턴"""
+        if len(row) < 10:
+            return False
+        return _is_date_row(row[2]) and bool(_ISIN_RE.match(row[9].strip()))
+
+    def _is_page_break(row: list) -> bool:
+        """페이지 구분선 판별: 'SHINHAN SECURITIES.' 라인 또는 페이지 번호 라인"""
+        if len(row) < 2:
+            return True
+        if 'SHINHAN SECURITIES' in row[1]:
+            return True
+        # 페이지 번호 라인: idx[2]가 비어있고 idx[6]이 한 자리 숫자
+        if len(row) >= 7 and row[6].strip().isdigit() and row[2].strip() == '' and row[1].strip() == '':
+            return True
+        return False
+
+    def _parse_stock_name(raw: str):
+        """'한글명(영문명)' 형식에서 (name_kr, name_en) 튜플 추출"""
+        raw = raw.strip()
+        m = re.match(r'^(.*?)\(([^)]+)\)$', raw)
+        if m:
+            return m.group(1).strip(), m.group(2).strip()
+        return raw, raw
+
+    records = []
+    i = 0
+    while i < len(lines):
+        row = lines[i]
+
+        # 페이지 구분선 · 컬럼 헤더 행 스킵
+        if _is_page_break(row) or not _is_row1(row):
+            i += 1
+            continue
+
+        # Row 1 확인 후 Row 2 페어링
+        if i + 1 >= len(lines):
+            break
+
+        row1 = row
+        row2 = lines[i + 1]
+
+        isin = row1[9].strip()
+
+        # Brazil 채권 제외
+        if isin in _SKIP_ISINS:
+            i += 2
+            continue
+
+        name_kr, name_en = _parse_stock_name(row1[8].strip() if len(row1) > 8 else '')
+
+        buy_sell_str = row2[6].strip() if len(row2) > 6 else ''
+        direction = -1 if '매도' in buy_sell_str else 1
+        qty = _clean_number(row1[3])
+
+        record = {
+            'trade_date':       row1[2].strip(),
+            'settlement_date':  row1[4].strip(),
+            'quantity':         qty * direction,
+            'currency':         row1[5].strip(),
+            'country':          row1[6].strip(),
+            'contract_amount':  _clean_number(row1[7]),
+            'stock_name_kr':    name_kr,
+            'stock_name_en':    name_en,
+            'isin':             isin,
+            'order_no':         row1[10].strip() if len(row1) > 10 else '',
+            'unit_price':       _clean_number(row2[3]) if len(row2) > 3 else 0.0,
+            'settlement_amount':_clean_number(row2[4]) if len(row2) > 4 else 0.0,
+            'fx_rate_krw':      _clean_number(row2[5]) if len(row2) > 5 else 0.0,
+            'buy_sell':         buy_sell_str,
+            'commission':       _clean_number(row2[7]) if len(row2) > 7 else 0.0,
+            'ticker':           row2[8].strip() if len(row2) > 8 else '',
+            'trade_type':       row2[9].strip() if len(row2) > 9 else '',
+        }
+        records.append(record)
+        i += 2
+
+    df = pd.DataFrame(records)
+
+    if df.empty:
+        print(f"⚠️ {MODULE_TAG} 해외매매내역: 파싱된 레코드 없음")
+        return df
+
+    df['trade_date'] = pd.to_datetime(df['trade_date'], format='%Y/%m/%d', errors='coerce')
+    df['settlement_date'] = pd.to_datetime(df['settlement_date'], format='%Y/%m/%d', errors='coerce')
+    df = df.sort_values('trade_date').reset_index(drop=True)
+
+    output_path = config.PROCESSED_DIR / config.PROCESSED_FILES['trade_history']
+    local_io.save_csv(df, output_path)
+    print(f"✅ {MODULE_TAG} 해외매매내역: {len(df)} rows → {output_path.name}")
+    return df
+
+
 # 5. Execution Block
 def main():
     print(f"🚀 {MODULE_TAG} Parsing Sequence Start...")
@@ -302,6 +431,9 @@ def main():
 
     df_holdings = parse_holdings_17100001()
     print(f"ℹ️ 보유종목: {len(df_holdings)} rows")
+
+    df_trades = parse_trade_history_2610()
+    print(f"ℹ️ 해외매매내역: {len(df_trades)} rows")
 
     print(f"✅ All Parsing Completed.")
 

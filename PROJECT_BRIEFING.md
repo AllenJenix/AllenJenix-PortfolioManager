@@ -1,5 +1,5 @@
 # Allenz Portfolio Manager — Project Briefing
-> 최초 작성: 2026-05-06 | 최종 업데이트: 2026-05-09  
+> 최초 작성: 2026-05-06 | 최종 업데이트: 2026-05-09 (Phase 3 Ledger v2 완료)  
 > 작성자: Claude (Cowork Senior Mentor Session)  
 > 용도: Claude Code 세션 인계용 컨텍스트 문서. 각 섹션의 "Claude Code 작업 지시문"을 그대로 붙여넣어 사용.
 
@@ -33,7 +33,8 @@ Value-Quant-reports/
     │   ├── data_loaders/
     │   │   ├── io.py              # CSV 입출력
     │   │   ├── parser.py          # HTS 원본 파싱
-    │   │   └── fred.py            # ✅ FRED/yfinance Rf 조회 모듈
+    │   │   ├── fred.py            # ✅ FRED/yfinance Rf 조회 모듈
+    │   │   └── trade_log.py       # ✅ SSOT 통합 거래 로그 (2610+1750, ledger/history 공통 참조)
     │   ├── engines/
     │   │   ├── ledger.py          # 04Daily_Asset_Ledger 생성 (월별 앵커 보간)
     │   │   ├── metrics.py         # 05Performance_Data 생성 (TWR, MWR, MDD 등)
@@ -117,6 +118,44 @@ Wealth Index `(1+r1)*(1+r2)*...` 기준 MDD 구현 확인. 입출금 왜곡 없�
 
 ---
 
+### ✅ [RESOLVED] 1750_kr 결제금액 누락 → Cash 음수 → Phantom MDD (2026-05-10)
+
+**원인:** `_load_1750_kr_trades()`가 `settlement_date = NaT`, `settlement_amount = NaN`으로 반환 → 한국 ETF 매수 대금이 `build_daily_trade_cash_flows()`에서 집계되지 않음 → `daily_unexplained` 잔차에 ETF 매수 금액 전액이 포함 → 앵커 구간 전체에 역방향 균등 분배 → 구간 내 Cash가 일별 -160,186씩 감소 → May 7–14 Cash 음수(-1.17M KRW) → Phantom MDD.
+
+**수정 내용 (`data_loaders/trade_log.py`):**
+1. `_load_1750_kr_trades()`: T+2 영업일 `settlement_date` + `변동금액` 기반 `settlement_amount` 추가
+2. `build_daily_trade_cash_flows()`: `source == '2610'` 필터 제거 → 1750_kr 결제일 현금흐름 포함
+3. **버그 수정:** `pd.to_numeric(...values...).abs()` → `pd.to_numeric(...).abs()` (ndarray→Series, `.abs()` 미지원 오류 제거)
+
+**연관 수정 (`engines/ledger.py`, `engines/history.py`):**
+- `_build_daily_holdings()`: `settlement_date.fillna(date)` effective_date 기준으로 보유 수량 산출 (T+0/T+2 phantom drawdown 제거)
+- `generate_timeline()`: ledger.py와 동일한 effective_date 로직으로 동기화
+
+**아키텍처 개선:** `data_loaders/trade_log.py` SSOT 모듈 신설. `ledger.py`와 `history.py`가 동일한 통합 거래 로그(`build_unified_trade_log`)를 공통 참조.
+
+---
+
+### 🔍 [BUG-03] MDD 수치 변동 — Bottom-Up 전환 후 검토 필요 (2026-05-09)
+
+**증상:** Ledger v2(Bottom-Up) 전환 후 MDD가 이전 대비 크게 변동.
+
+| 구분 | 값 | 방식 |
+|---|---|---|
+| 이전 (선형 보간) | ~-15% | 월별 앵커 사이 직선 보간 → 인위적 평탄화 |
+| 현재 (Bottom-Up v2) | **-35.51%** | 실제 주가×수량 기반 Equity_Value 계산 |
+
+**가설 1 (보간 과소계상):** 선형 보간은 월간 앵커 사이 실제 주가 등락을 무시하므로 MDD가 구조적으로 과소계상됨. 15%는 하한선(floor)에 가까운 인위적 수치였을 가능성 높음.
+
+**가설 2 (Bottom-Up 과대계상):** 현재 현금 보정 로직의 구조적 한계. 주식 매도 시 매도 대금이 즉시 현금으로 반영되지 않고 앵커 구간 잔여 일수에 선형 분배됨 → 매도 당일 Calculated_Asset이 일시적으로 낮아지는 인위적 낙폭 발생. 특히 구간 후반부 대량 매도 시 왜곡 심화.
+
+**예시 (검증됨):** 2025-07-24 A466940 177주 매도 당일 일별 수익률 -10.7% 기록. 실제 포트폴리오는 Jun30/Jul31 앵커 모두 24.2M으로 당월 평보합이었음에도, 매도 당일 equity 급감 + 현금 지연 반영으로 Calculated_Asset이 ~30M → ~27M으로 하락한 것처럼 계산됨.
+
+**결론:** 실제 MDD는 15%(과소)~35.51%(과대) 사이 어딘가에 위치할 것으로 추정. 정확한 MDD 산출을 위해서는 매도 당일 현금 즉시 반영 로직(결제일 기준 현금 플로우 추적)이 필요. Phase 3 고도화 항목으로 등록.
+
+**현재 대응:** UI 출력에 "(참고용, 현금 지연 반영 한계)" 주석 표기 권장.
+
+---
+
 ### 🟡 [BUG-02] Beta / Alpha / IR 수치 신뢰 부족 — 선형 보간의 구조적 한계 (부분 개선)
 
 **벤치마크 SPY는 올바름.** 포트폴리오는 미국 주식 중심(일본 1종목)이므로 SPY가 적합한 벤치마크임.
@@ -148,6 +187,46 @@ UI 출력에 "(참고용, 보간 한계)" 주석 표기 권장.
 ---
 
 ## 5. 완료된 주요 구현
+
+### ✅ Phase 3 — Ledger v2 Bottom-Up Reconstruction (2026-05-09)
+
+**파일:** `engines/ledger.py` (전면 재작성), `engines/history.py` (effective_date 동기화), `data_loaders/trade_log.py` (SSOT 신설), `data_loaders/parser.py`, `config.py`, `isin_mapping.json`
+
+**핵심 변경:**
+- HTS 2610.csv (해외주식매매내역) 통합: 매매일 기준 221건, Jan 2025 ~ Apr 2026 전구간 커버
+- 한국 ETF 보완: 1750.csv 장내_매수/매도 11건 (A466940, A494670)
+- `_build_unified_trade_log()` → `_build_daily_holdings()` → yfinance 가격조회 → KRW 환산 파이프라인 구축
+- HTS 앵커(월말 NAV) 기반 Cash 보정: 구간별 외부자금흐름 정확 반영 + 잔차(FX·배당) 균등 배분
+
+**ISIN 티커 해결 로직 (`_resolve_tickers`):**
+
+| 통화 | 규칙 | 예시 |
+|---|---|---|
+| USD | `isin_mapping` 키 존재 시 우선 적용, 없으면 2610 티커 fallback | BRK.B→BRK-B, AMRZ.SW→AMRZ |
+| JPY | 2610 티커 + `.T` 접미사 | `3093` → `3093.T` |
+| KRW | `isin_mapping` `.KS` 티커 | `A466940` → `466940.KS` |
+
+**데이터 품질 이슈 해결:**
+- CHR (CHEER HOLDING INC, `KYG399732042`): 역분할(Reverse Split)로 yfinance 역사 가격이 $24 (실제 거래가 $0.167)로 왜곡 → `isin_mapping`에서 `""` 처리(의도적 제외). 실질 포지션 net=0 (Oct 7 매수 → Oct 8 매도)이므로 앵커 보정으로 흡수됨.
+- `02src/isin_mapping.json` 신규 엔트리: Korean ETF(466940.KS, 494670.KS), ITRN, LEN, LW, BMI, INVE. 루트 `isin_mapping.json`과 동기화 완료.
+
+**최종 성과 지표 (Bottom-Up v2 기준):**
+
+| 지표 | 값 | 비고 |
+|---|---|---|
+| TWR | **33.79%** | 이전 42.45% 대비 하락 → Bottom-Up이 외부자금 타이밍을 더 정밀하게 반영 |
+| CAGR | **24.05%** | |
+| MWR | **42.71%** | |
+| MDD | **재실행 필요** | 1750_kr 결제금액 수정 전 수치(-35.51%). 수정 후 파이프라인 재실행 필요 |
+| Sharpe | **0.81** | |
+| Sortino | **3.17** | |
+| Alpha (SPY) | **+19.52%** | |
+
+**알려진 한계:**
+- Jan 2025: Dec 2024 보유 포지션(USLM/FIX/CPNG/IGIC)이 2610.csv 커버리지 밖(매매일 Dec 2024) → 해당월 Equity_Value 과소계상, Jan 31 앵커 보정으로 흡수
+- MDD 과대계상 가능성 (BUG-03 참조)
+
+---
 
 ### ✅ Beta 월별 수익률 기반 전환 (2026-05-09)
 **파일:** `engines/metrics.py` — Beta 계산 섹션
@@ -194,6 +273,8 @@ rf = get_risk_free_rate()   # 예: 0.036 = 3.6%
 | **BUG-01: ledger 롤백 + Sharpe/Sortino 월별 전환** | ✅ 완료 | TWR 42.45%, Sharpe ~1.07 |
 | **BUG-02: Beta 월별 수익률 기반 전환** | 🟡 부분 완료 | 0.0002 → 0.12, 완전 해결은 Phase 3 |
 | DuckDB 도입 검토 | ⏸ 보류 | CSV 파이프라인 안정화 후 |
+| **Phase 3 Ledger v2 — 2610 기반 Bottom-Up 재구성** | ✅ 완료 | TWR 33.79%, MDD 재실행 필요 (BUG-03 + 1750_kr 수정 후) |
+| **SSOT trade_log.py + 1750_kr 결제금액 + effective_date 통일** | ✅ 완료 | Phantom MDD 원인(음수 Cash) 제거, ndarray .abs() 수정 |
 
 ### Phase 2 — 중기
 
@@ -213,7 +294,7 @@ rf = get_risk_free_rate()   # 예: 0.036 = 3.6%
 | Watch-list 자동 스크리닝 | yfinance + Value 필터 (P/B, EV/EBIT, Net-Net) |
 | Capital IQ 실시간 연동 | Cowork `sp-global` 플러그인 → MCP Tool 등록 |
 | RAG 기반 투자 메모 검색 | Obsidian 볼트 → chromadb/faiss 인덱싱 |
-| Ledger 아키텍처 개선 | 월별 보간 → 거래 기반 bottom-up 재구성 (1750.csv 종목별 가격×수량) |
+| ✅ Ledger 아키텍처 개선 | 월별 보간 → 거래 기반 bottom-up 재구성 완료 (2610.csv 매매일 기준). 다음 단계: 매도 당일 현금 즉시 반영 (BUG-03 해결) |
 
 ---
 

@@ -21,8 +21,10 @@ if str(SRC_DIR) not in sys.path:
 import config
 try:
     from data_loaders import io as local_io
+    from data_loaders.trade_log import build_unified_trade_log
 except ImportError:
     import io as local_io
+    from trade_log import build_unified_trade_log
 
 # 2. Constants
 MODULE_TAG = "[TimeMachine]"
@@ -63,7 +65,7 @@ def _update_isin_mapping(isin_list: set) -> dict:
     Returns:
         dict: 최신화된 ISIN -> Ticker 매핑 사전
     """
-    json_path = SRC_DIR.parent / "isin_mapping.json"
+    json_path = config.ISIN_MAPPING_FILE
 
     # 1. 기존 매핑 파일 읽기
     if json_path.exists():
@@ -131,45 +133,48 @@ def generate_timeline() -> None:
     """거래 내역과 현재 잔고를 기반으로 과거 포트폴리오 가치를 역산합니다."""
     print(f"🚀 {MODULE_TAG} 타임머신 데이터(Wide Format 역산 + 현금) 생성 시작...")
 
-    # --- 1. 거래 내역 (Transaction) 및 보유 종목 (Holdings) 로드 ---
-    txn_file = config.PROCESSED_DIR / "00Transaction_History.csv"
+    # --- 1. 통합 거래 로그 (SSOT) 및 보유 종목 (Holdings) 로드 ---
+    # 2610(해외주식) + 1750(한국 ETF) 통합 — 00Transaction_History 직접 파싱 제거
+    trade_log = build_unified_trade_log()
     holdings_file = config.PROCESSED_DIR / "02Portfolio_Holdings.csv"
 
-    if not txn_file.exists():
-        print(f"❌ {MODULE_TAG} 거래 내역 파일이 없습니다.")
-        return
-
-    df_txn = local_io.load_csv(txn_file)
-    df_txn['일자'] = pd.to_datetime(df_txn['일자'])
-
-    mask_stock = df_txn['구분'].str.contains('매수|매도', na=False) & df_txn['종목번호'].notna()
-    df_stocks = df_txn[mask_stock].copy()
-
-    if df_stocks.empty:
-        print(f"⚠️ {MODULE_TAG} 주식 거래 내역이 없습니다.")
+    if trade_log.empty:
+        print(f"❌ {MODULE_TAG} 통합 거래 로그가 비어있습니다.")
         return
 
     df_holdings = pd.DataFrame()
     if holdings_file.exists():
         df_holdings = local_io.load_csv(holdings_file)
 
-    # --- 2. 스마트 ISIN 자동 매핑 (NEW) ---
-    isins_from_txn = df_stocks['종목번호'].dropna().astype(str).tolist()
-    isins_from_holdings = df_holdings['종목코드'].dropna().astype(str).tolist() if not df_holdings.empty and '종목코드' in df_holdings.columns else []
+    # --- 2. 스마트 ISIN 자동 매핑 ---
+    isins_from_trades = trade_log['isin'].dropna().astype(str).tolist()
+    isins_from_holdings = (
+        df_holdings['종목코드'].dropna().astype(str).tolist()
+        if not df_holdings.empty and '종목코드' in df_holdings.columns
+        else []
+    )
 
-    unique_isins = set(isins_from_txn + isins_from_holdings)
+    unique_isins = set(isins_from_trades + isins_from_holdings)
     latest_mapping = _update_isin_mapping(unique_isins)
 
-    # 매핑 적용
-    df_stocks['Ticker'] = df_stocks['종목번호'].astype(str).map(latest_mapping)
-    df_stocks = df_stocks.dropna(subset=['Ticker'])
+    # 매핑 우선순위: latest_mapping(최신) > trade_log 내 ticker(2610 원본)
+    trade_log['ticker'] = trade_log.apply(
+        lambda r: latest_mapping.get(str(r['isin']), r['ticker']),
+        axis=1
+    )
+    df_stocks = trade_log[trade_log['ticker'].str.strip() != ''].copy()
 
-    # 매도는 수량을 음수로 변환
-    mask_sell = df_stocks['구분'].str.contains('매도')
-    df_stocks.loc[mask_sell, '수량'] = -df_stocks.loc[mask_sell, '수량']
+    if df_stocks.empty:
+        print(f"⚠️ {MODULE_TAG} 매핑된 주식 거래 내역이 없습니다.")
+        return
 
-    daily_change = df_stocks.groupby(['일자', 'Ticker'])['수량'].sum().reset_index()
-    change_wide = daily_change.pivot(index='일자', columns='Ticker', values='수량').fillna(0)
+    # quantity는 SSOT에서 이미 signed(매도=음수). 별도 부호 변환 불필요.
+    # ledger.py와 동일한 결제일 기준 정렬 (1750_kr NaT → trade date fallback).
+    _df = df_stocks.copy()
+    _df['effective_date'] = _df['settlement_date'].fillna(_df['date'])
+    daily_change = _df.groupby(['effective_date', 'ticker'])['quantity'].sum().reset_index()
+    daily_change = daily_change.rename(columns={'effective_date': 'date'})
+    change_wide = daily_change.pivot(index='date', columns='ticker', values='quantity').fillna(0)
 
     # --- 3. 현재 잔고 (Current Holdings) 앵커링 ---
     current_holdings = {}
@@ -179,7 +184,7 @@ def generate_timeline() -> None:
             current_holdings[row['Ticker']] = float(row.get('잔고수량', 0))
 
     # --- 4. 역산 (Reverse Engineering) 알고리즘 ---
-    all_tickers = list(set(current_holdings.keys()) | set(df_stocks['Ticker'].unique()))
+    all_tickers = list(set(current_holdings.keys()) | set(df_stocks['ticker'].unique()))
 
     start_date = change_wide.index.min() if not change_wide.empty else (pd.Timestamp.today() - pd.Timedelta(days=30))
     today = pd.Timestamp.today().normalize()
