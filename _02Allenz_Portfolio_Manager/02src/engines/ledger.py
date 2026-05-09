@@ -2,8 +2,11 @@
 @Title: Asset Ledger Engine (Direct Access)
 @Description: 한글 컬럼명을 그대로 사용하여 직관적으로 자산 원장을 생성하는 엔진.
               (불필요한 매핑 로직 제거됨)
+              기본값 business_days_only=True: 주말 행을 제거하여 Daily_Return
+              표준편차 과소 추정 및 Sharpe 과대계상 문제를 방지합니다.
 @Author: Allen & Gemini
 @Date: 2026-02-14
+@Updated: 2026-05-07 — business_days_only 옵션 추가 (주말 제거로 Sharpe 왜곡 방지)
 """
 
 # 1. Imports
@@ -94,10 +97,17 @@ def _calculate_net_flow(df_tx: pd.DataFrame) -> pd.Series:
     return df.groupby('Date')['NetFlow'].sum()
 
 # 4. Main Logic
-def create_daily_ledger() -> pd.DataFrame:
+def create_daily_ledger(business_days_only: bool = False) -> pd.DataFrame:
     """
     일별 자산 원장 생성 (한글 컬럼 직접 접근)
     Input: 01Asset_Summary.csv ('순자산'), 00Transaction_History.csv
+
+    Args:
+        business_days_only (bool): True이면 주말(토·일) 행을 최종 저장 전 제거.
+            내부 보간(daily_gain 배분)은 역일 기준으로 동일하게 수행되며,
+            필터링 후 월요일 수익률이 주말분 이익을 흡수합니다.
+            이는 실제 주식시장 주간 수익률 거동과 일치합니다.
+            False로 설정 시 역일(calendar day) 기준 원장을 생성합니다.
     """
     print(f"🚀 {MODULE_TAG} 일별 자산 원장 생성 시작...")
 
@@ -192,7 +202,17 @@ def create_daily_ledger() -> pd.DataFrame:
             running_asset += flow
             ledger.loc[day, 'Calculated_Asset'] = running_asset
 
-    # 6. 저장
+    # 6. 거래일 필터링 (주말 제거)
+    # 내부 보간은 역일 기준으로 완료된 상태이며, 주말 행을 제거합니다.
+    # 월요일 수익률이 금요일 이후 주말분 이익을 흡수하는 구조로,
+    # 실제 주식시장 주간 수익률 거동과 일치합니다.
+    n_before = len(ledger)
+    if business_days_only:
+        ledger = ledger[ledger.index.dayofweek < 5]
+        n_removed = n_before - len(ledger)
+        print(f"ℹ️  {MODULE_TAG} 주말 행 {n_removed}개 제거 → {len(ledger)}행 (거래일 기준)")
+
+    # 7. 저장
     ledger = ledger.reset_index()
     ledger['Calculated_Asset'] = ledger['Calculated_Asset'].round(0)
 
@@ -275,7 +295,7 @@ def generate_integrated_portfolio(ledger_df: pd.DataFrame) -> pd.DataFrame:
 
 # 5. Execution Block
 def main():
-    df_ledger = create_daily_ledger()
+    df_ledger = create_daily_ledger(business_days_only=False)
     if not df_ledger.empty:
         generate_integrated_portfolio(df_ledger)
 

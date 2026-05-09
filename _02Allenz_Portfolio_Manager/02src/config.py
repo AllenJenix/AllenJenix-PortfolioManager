@@ -32,12 +32,13 @@ else:
     DATA_DIR = BASE_DIR / "01DATA"
 
 # 세부 데이터 폴더 경로
-RAW_DIR = DATA_DIR / "raw"
+RAW_DIR       = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
-REFERENCE_DIR = DATA_DIR / "reference" # AI가 참고할 PDF 자원 폴더 추가
+REFERENCE_DIR = DATA_DIR / "reference"  # AI가 참고할 PDF 자원 폴더
+CACHE_DIR     = DATA_DIR / "cache"      # FRED 금리 등 외부 API 캐시 저장소
 
 # 4. Directory Initialization (디렉토리 자동 생성)
-for d in [DATA_DIR, RAW_DIR, PROCESSED_DIR, REFERENCE_DIR]:
+for d in [DATA_DIR, RAW_DIR, PROCESSED_DIR, REFERENCE_DIR, CACHE_DIR]:
     if not d.exists():
         d.mkdir(parents=True, exist_ok=True)
         print(f"🚀 [Config] 필수 디렉토리 확인/생성됨: {d}")
@@ -65,6 +66,14 @@ PROCESSED_FILES = {
 # 6. Global Constants (공통 상수)
 ENCODING_KR = 'cp949'      # HTS 다운로드 원본 (한글 윈도우 표준)
 ENCODING_STD = 'utf-8-sig' # 내부 처리용 표준 (Excel 호환)
+
+# --- [Risk-Free Rate] ---
+# Sharpe / Sortino 계산 시 무위험이자율(Rf) 조회 방식:
+#   실제 값은 data_loaders/fred.py의 get_risk_free_rate()를 호출하여 사용.
+#   조회 우선순위: 캐시(24h TTL) → FRED API → yfinance ^IRX → 아래 상수 Fallback
+#   FRED API Key (.env 파일에 FRED_API_KEY=xxx 추가, 무료 발급):
+#     https://fredaccount.stlouisfed.org/apikeys
+RISK_FREE_RATE_FALLBACK = 0.045  # 4.5% — 모든 외부 조회 실패 시 최후 수단 상수
 
 # --- [Tickers Mapping (Temporary JSON)] ---
 ISIN_MAPPING_FILE = SRC_DIR / "isin_mapping.json"

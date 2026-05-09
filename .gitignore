@@ -6,4 +6,5 @@
 *dist
 *.py[cod]
 CLAUDE.md
-PROJECT_BRIEFING.md
+# PROJECT_BRIEFING.md
+*.claude

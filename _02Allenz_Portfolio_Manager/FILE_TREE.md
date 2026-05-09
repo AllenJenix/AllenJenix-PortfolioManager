@@ -1,47 +1,33 @@
 ```text
-Allenz_Portfolio_Manager/
-│
-├── .env                     # 🔒 API 키 등 환경 변수 저장 (git 제외)
-├── .gitignore               # git 추적 제외 목록 (.env, logs 등)
-│
-├── 01DATA/                  # 💾 [데이터 계층]
-│   ├── raw/                 # [Input] HTS에서 다운받은 원본 CSV (자동화 시작점)
-│   ├── processed/           # [Output] 파이프라인이 정제/생성한 시스템 데이터 (00~07)
-│   └── reference/           # 📚 [AI Source] 주주서한/팩트시트 원본 PDF
-│
-├── 02src/                   # 🧠 [소스 코드]
-│   ├── config.py            # [전역 설정] 절대 경로, 파일명 매핑, 공통 상수 관리
-│   ├── isin_mapping.json    # [설정] ISIN 국제표준코드 ↔ 실제 Ticker 수동 매핑 사전
-│   │
-│   ├── data_loaders/        # 🧱 [Layer 1] 데이터 수집 및 전처리
-│   │   ├── io.py            
-│   │   └── parser.py        
-│   │
-│   ├── engines/             # ⚙️ [Layer 2] 퀀트 분석 핵심 엔진
-│   │   ├── ledger.py        
-│   │   ├── metrics.py       
-│   │   ├── benchmark.py     
-│   │   └── history.py       
-│   │
-│   ├── ui/                  # 🖥️ [Layer 3] Streamlit 웹 대시보드
-│   │   ├── app.py           
-│   │   └── components/      
-│   │       ├── portfolio.py 
-│   │       ├── analytics.py 
-│   │       └── history_tab.py 
-│   │
-│   └── ai/                  # 🤖 [Layer 4] 멀티모달 AI 리포트 생성 (Gemini 2.5 Pro)
-│       ├── mcp_server.py    
-│       ├── agent.py         
-│       └── prompts.py       
-│
-├── 03Output/                # ✉️ [출력 계층] AI가 생성한 최종 결과물
-│   └── 2025_01_Integrated_Report.md
-│
-├── logs/                    # 📝 실행 로그 폴더
-│
-├── CODING_CONVENTION.md     # 📜 코딩 표준 정의서
-├── FILE_TREE.md             # 📜 프로젝트 디렉터리 구조
-│
-└── update.py                # 🔄 [메인 스위치] 전체 데이터 갱신 및 파이프라인 트리거
+Value-Quant-reports/
+├── _01Obsidian/                   # 투자 지식 관리 볼트 (Daily Memo, 투자 thesis)
+└── _02Allenz_Portfolio_Manager/
+    ├── 01DATA/
+    │   ├── raw/                   # HTS 원본 (1750.csv, 1721.csv, 17100001.csv)
+    │   ├── processed/             # 시스템 생성 CSV (00~07)
+    │   ├── reference/             # AI 참조 PDF (RVE Factsheet, Robotti Letters)
+    │   └── cache/                 # 외부 API 캐시 (rf_cache.json 등, 24h TTL)
+    ├── 02src/
+    │   ├── config.py              # 경로/파일명/상수 전역 설정 (Dev/Frozen 모드 분기)
+    │   ├── data_loaders/
+    │   │   ├── io.py              # CSV 입출력
+    │   │   ├── parser.py          # HTS 원본 파싱
+    │   │   └── fred.py            # ✅ FRED/yfinance Rf 조회 모듈
+    │   ├── engines/
+    │   │   ├── ledger.py          # 04Daily_Asset_Ledger 생성 (월별 앵커 보간)
+    │   │   ├── metrics.py         # 05Performance_Data 생성 (TWR, MWR, MDD 등)
+    │   │   ├── benchmark.py       # 06Benchmark_Data 생성 (SPY, QQQ, IWM)
+    │   │   └── history.py         # 07Historical_Holdings 생성
+    │   ├── ai/
+    │   │   ├── agent.py           # AI 리포트 파이프라인 (Gemini → Claude 전환 예정)
+    │   │   ├── mcp_server.py      # MCP 서버 (포트폴리오 데이터 제공)
+    │   │   └── prompts.py         # System Persona + Master Report Template
+    │   └── ui/
+    │       ├── app.py             # 메인 Streamlit UI
+    │       └── components/        # analytics, data_manager, history_tab, portfolio
+    ├── 03Output/                  # AI 생성 리포트 (.md)
+    ├── main.py
+    ├── CLAUDE.md
+    ├── CODING_CONVENTION.md
+    └── requirements.txt
 ```
