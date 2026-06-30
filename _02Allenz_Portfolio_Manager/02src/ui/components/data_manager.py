@@ -29,10 +29,11 @@ def render():
 
     # 1. 필요 파일 목록 안내
     st.subheader("📌 필요 파일 체크리스트")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.info(f"거래 내역\n\n**{config.RAW_FILES['transaction']}**")
     col2.info(f"자산 현황\n\n**{config.RAW_FILES['asset_summary']}**")
     col3.info(f"보유 종목\n\n**{config.RAW_FILES['holdings']}**")
+    col4.info(f"해외주식 매매내역\n\n**{config.RAW_FILES['trade_history']}**")
 
     # 2. 파일 업로더 위젯
     uploaded_files = st.file_uploader(

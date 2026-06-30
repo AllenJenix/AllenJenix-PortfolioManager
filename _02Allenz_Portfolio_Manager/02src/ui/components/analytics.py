@@ -71,7 +71,7 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
     min_date = df_perf['Date'].min().date()
     max_date = df_perf['Date'].max().date()
 
-    col_date, _ = st.columns([1, 2])
+    col_date, col_duration, _ = st.columns([1, 1, 1])
     with col_date:
         selected_dates = st.date_input(
             "📅 분석 기간 선택",
@@ -85,6 +85,10 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
         return
 
     start_date, end_date = pd.to_datetime(selected_dates[0]), pd.to_datetime(selected_dates[1])
+
+    with col_duration:
+        duration_days = (end_date - start_date).days
+        st.metric("⏱️ 투자 기간", f"D+{duration_days:,}일")
 
     # 데이터 리베이싱 (선택 기간에 맞춤)
     p_df, b_df = _rebase_data(df_perf, df_bench, start_date, end_date)
@@ -119,6 +123,33 @@ def render_page(df_perf: pd.DataFrame, df_bench: pd.DataFrame):
         st.metric("📉 MDD", f"{period_mdd:.2f}%", delta=f"{period_mdd:.2f}%", delta_color="inverse")
     with kpi4:
         st.metric("🥊 Alpha (vs S&P500)", f"{alpha:.2f}%p", delta=f"{alpha:.2f}%p")
+
+    # --- CAGR 섹션 ---
+    st.markdown("### 📐 CAGR (연환산 수익률)")
+
+    calendar_days = (end_date - start_date).days
+    def _to_cagr(total_return_pct: float, days: int) -> float:
+        if days <= 0:
+            return 0.0
+        return ((1 + total_return_pct / 100) ** (365.0 / days) - 1) * 100
+
+    period_qqq = b_df['QQQ_TWR'].iloc[-1] * 100
+    period_iwm = b_df['IWM_TWR'].iloc[-1] * 100
+
+    cagr_portfolio = _to_cagr(period_twr, calendar_days)
+    cagr_spy      = _to_cagr(period_spy, calendar_days)
+    cagr_qqq      = _to_cagr(period_qqq, calendar_days)
+    cagr_iwm      = _to_cagr(period_iwm, calendar_days)
+
+    cagr1, cagr2, cagr3, cagr4 = st.columns(4)
+    with cagr1:
+        st.metric("📈 내 포트폴리오", f"{cagr_portfolio:.2f}%", delta=f"{cagr_portfolio:.2f}%")
+    with cagr2:
+        st.metric("🇺🇸 S&P 500 (SPY)", f"{cagr_spy:.2f}%", delta=f"{cagr_spy:.2f}%")
+    with cagr3:
+        st.metric("💻 NASDAQ 100 (QQQ)", f"{cagr_qqq:.2f}%", delta=f"{cagr_qqq:.2f}%")
+    with cagr4:
+        st.metric("📦 Russell 2000 (IWM)", f"{cagr_iwm:.2f}%", delta=f"{cagr_iwm:.2f}%")
 
     st.markdown("---")
 

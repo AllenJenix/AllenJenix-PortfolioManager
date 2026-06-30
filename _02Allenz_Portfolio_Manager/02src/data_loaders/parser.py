@@ -245,46 +245,68 @@ def parse_holdings_17100001() -> pd.DataFrame:
 
     records = []
 
-    # [NEW] 무시할 키워드 목록 강화
+    # 무시할 키워드 목록
     ignore_keywords = ["합계", "소계", "본 출력물", "출력", "감사", "안내"]
 
     for i in range(1, len(df_raw), 2):
-        if i+1 >= len(df_raw): break
+        if i + 1 >= len(df_raw):
+            break
 
         row_a = df_raw.iloc[i]
-        row_b = df_raw.iloc[i+1]
+        row_b = df_raw.iloc[i + 1]
 
-        code = str(row_a.iloc[1])
+        # df_raw의 컬럼명('종목코드', '잔고수량' 등)으로 접근 — iloc 인덱스 방식은
+        # HTS 포맷의 리딩 빈 열(leading empty column) 유무에 따라 오프셋이 달라져
+        # 버그를 유발하므로 컬럼명 기반으로 변경.
+        #
+        # row_a: 첫 번째 행 → ISIN, 수량, 단가, 손익 등
+        # row_b: 두 번째 행 → 종목명, 구분, 현재가, 평가금액 등
+        #   (같은 DataFrame 컬럼명을 공유하므로 아래와 같이 매핑)
+        #   row_b['종목코드']     → 종목명
+        #   row_b['잔고수량']     → 구분 (현금/신용)
+        #   row_b['주문가능수량'] → 보유비중
+        #   row_b['평균단가']     → 현재가
+        #   row_b['매입금액']     → 평가금액
+        #   row_b['미실현손익']   → 수익률
+        #   row_b['신용금액']     → 대출일
+        #   row_b['매수일']       → 만기일
+        #   row_b['매입환율']     → 현재환율
+        code = _clean_str(row_a.get('종목코드', ''))
 
-        # [Filter Logic Enhanced]
-        # 키워드가 포함되어 있으면 건너뛰기
-        if code == 'nan' or any(k in code for k in ignore_keywords):
+        if not code or any(k in code for k in ignore_keywords):
             continue
 
         item = {
-            '종목코드': _clean_str(row_a.iloc[1]),
-            '잔고수량': _clean_number(row_a.iloc[4]),
-            '주문가능수량': _clean_number(row_a.iloc[6]),
-            '평균단가': _clean_number(row_a.iloc[7]),
-            '매입금액': _clean_number(row_a.iloc[9]),
-            '미실현손익': _clean_number(row_a.iloc[10]),
-            '신용금액': _clean_number(row_a.iloc[11]),
-            '매수일': _clean_str(row_a.iloc[14]),
-            '매입환율': _clean_number(row_a.iloc[15]),
+            '종목코드':      _clean_str(row_a.get('종목코드', '')),
+            '잔고수량':      _clean_number(row_a.get('잔고수량', 0)),
+            '주문가능수량':  _clean_number(row_a.get('주문가능수량', 0)),
+            '평균단가':      _clean_number(row_a.get('평균단가', 0)),
+            '매입금액':      _clean_number(row_a.get('매입금액', 0)),
+            '미실현손익':    _clean_number(row_a.get('미실현손익', 0)),
+            '신용금액':      _clean_number(row_a.get('신용금액', 0)),
+            '매수일':        _clean_str(row_a.get('매수일', '')),
+            '매입환율':      _clean_number(row_a.get('매입환율', 0)),
 
-            '종목명': _clean_str(row_b.iloc[1]),
-            '구분': _clean_str(row_b.iloc[4]),
-            '보유비중': _clean_number(row_b.iloc[6]),
-            '현재가': _clean_number(row_b.iloc[7]),
-            '평가금액': _clean_number(row_b.iloc[9]),
-            '수익률': _clean_number(row_b.iloc[10]),
-            '대출일': _clean_str(row_b.iloc[11]),
-            '만기일': _clean_str(row_b.iloc[14]),
-            '현재환율': _clean_number(row_b.iloc[15])
+            '종목명':        _clean_str(row_b.get('종목코드', '')),
+            '구분':          _clean_str(row_b.get('잔고수량', '')),
+            '보유비중':      _clean_number(row_b.get('주문가능수량', 0)),
+            '현재가':        _clean_number(row_b.get('평균단가', 0)),
+            '평가금액':      _clean_number(row_b.get('매입금액', 0)),
+            '수익률':        _clean_number(row_b.get('미실현손익', 0)),
+            '대출일':        _clean_str(row_b.get('신용금액', '')),
+            '만기일':        _clean_str(row_b.get('매수일', '')),
+            '현재환율':      _clean_number(row_b.get('매입환율', 0)),
         }
         records.append(item)
 
     df = pd.DataFrame(records)
+
+    # HTS는 국내 주식 섹션에만 보유비중을 제공하고 해외 종목은 0으로 내보냄.
+    # 전 종목 보유비중을 평가금액 기준으로 재계산한다.
+    if not df.empty and '평가금액' in df.columns:
+        total_val = df['평가금액'].sum()
+        if total_val > 0:
+            df['보유비중'] = (df['평가금액'] / total_val * 100).round(2)
 
     output_path = config.PROCESSED_DIR / config.PROCESSED_FILES['holdings']
     local_io.save_csv(df, output_path)

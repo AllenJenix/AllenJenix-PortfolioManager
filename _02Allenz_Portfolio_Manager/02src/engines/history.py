@@ -48,7 +48,12 @@ def _fetch_price_series(ticker: str, start_date: str, end_date: str) -> pd.Serie
         hist = stock.history(start=start_date, end=end_dt)
         if hist.empty or 'Close' not in hist.columns:
             return pd.Series(dtype='float64')
-        return hist['Close']
+        series = hist['Close']
+        # tz_localize(None) strips timezone while preserving wall-clock date (midnight stays midnight).
+        # tz_convert(None) would shift to UTC first (e.g. NYSE midnight → 05:00 UTC), breaking joins.
+        if series.index.tz is not None:
+            series.index = series.index.tz_localize(None)
+        return series
     except Exception as e:
         print(f"⚠️ {MODULE_TAG} {ticker} 가격 수집 에러: {e}")
         return pd.Series(dtype='float64')
@@ -177,17 +182,26 @@ def generate_timeline() -> None:
     change_wide = daily_change.pivot(index='date', columns='ticker', values='quantity').fillna(0)
 
     # --- 3. 현재 잔고 (Current Holdings) 앵커링 ---
+    today = pd.Timestamp.today().normalize()
+
     current_holdings = {}
     if not df_holdings.empty and '종목코드' in df_holdings.columns:
         df_holdings['Ticker'] = df_holdings['종목코드'].astype(str).map(latest_mapping)
         for _, row in df_holdings.dropna(subset=['Ticker']).iterrows():
             current_holdings[row['Ticker']] = float(row.get('잔고수량', 0))
 
+    # Fallback: 보유종목 파일이 없거나 비어있을 때 거래 로그 누적합으로 현재 잔고 추정.
+    # change_wide의 settlement-date 기준 누적합이 SSOT(trade_log)와 일치하므로 신뢰도 높음.
+    if not current_holdings:
+        print(f"⚠️ {MODULE_TAG} 보유종목 파일 없음/비어있음 — 거래 로그 누적합으로 현재 잔고 추정")
+        cum_qty = change_wide[change_wide.index <= today].sum(axis=0)
+        current_holdings = {t: max(0.0, float(q)) for t, q in cum_qty.items() if float(q) > 0}
+        print(f"ℹ️ {MODULE_TAG} 추정 현재 잔고: {len(current_holdings)}건 — {current_holdings}")
+
     # --- 4. 역산 (Reverse Engineering) 알고리즘 ---
     all_tickers = list(set(current_holdings.keys()) | set(df_stocks['ticker'].unique()))
 
-    start_date = change_wide.index.min() if not change_wide.empty else (pd.Timestamp.today() - pd.Timedelta(days=30))
-    today = pd.Timestamp.today().normalize()
+    start_date = change_wide.index.min() if not change_wide.empty else (today - pd.Timedelta(days=30))
 
     reversed_dates = pd.date_range(start=start_date, end=today, freq='D')[::-1]
 
@@ -204,7 +218,9 @@ def generate_timeline() -> None:
             day_changes = change_wide.loc[d]
             for t, change in day_changes.items():
                 if pd.notna(change) and change != 0:
-                    running_holdings[t] = running_holdings.get(t, 0.0) - change
+                    # clip(lower=0): 매도 기록 없이 매수만 존재하는 갭 구간에서
+                    # 역산 시 음수가 되는 것을 방지. 0으로 처리해 '미보유'로 표시.
+                    running_holdings[t] = max(0.0, running_holdings.get(t, 0.0) - change)
 
     df_qty_wide = pd.DataFrame(history_qty).set_index('Date').sort_index()
 

@@ -52,12 +52,19 @@ def load_csv(file_path: str, encoding: str = config.ENCODING_STD, **kwargs) -> p
         df = pd.read_csv(path_obj, encoding=encoding, **kwargs)
         return df
 
+    except pd.errors.EmptyDataError:
+        print(f"⚠️ {MODULE_TAG} 빈 파일 감지. 빈 DataFrame 반환: {path_obj.name}")
+        return pd.DataFrame()
+
     except UnicodeDecodeError:
         # 2차 시도: 한국어 인코딩(cp949)
         print(f"⚠️ {MODULE_TAG} 인코딩({encoding}) 실패. '{config.ENCODING_KR}'로 재시도합니다: {path_obj.name}")
         try:
             df = pd.read_csv(path_obj, encoding=config.ENCODING_KR, **kwargs)
             return df
+        except pd.errors.EmptyDataError:
+            print(f"⚠️ {MODULE_TAG} 빈 파일 감지 (CP949). 빈 DataFrame 반환: {path_obj.name}")
+            return pd.DataFrame()
         except Exception as e:
             print(f"❌ {MODULE_TAG} CP949 로드 실패: {e}")
             raise e
